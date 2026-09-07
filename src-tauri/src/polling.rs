@@ -7,7 +7,7 @@ use std::{
         Arc,
     },
 };
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 
 #[derive(Clone)]
 pub struct RuntimeState {
@@ -77,18 +77,39 @@ async fn worker_loop(state: RuntimeState) {
         }
     };
 
+    let (sse_tx, mut sse_rx) = mpsc::channel::<()>(1);
+    let sse_state = state.clone();
+    let sse_task = tauri::async_runtime::spawn(async move {
+        sse_signal_loop(sse_state, sse_tx).await;
+    });
+    let mut first_pull = true;
+    let mut next_poll_ms = 1_500_u64;
+
     while state.running.load(Ordering::SeqCst) {
+        if !first_pull {
+            tokio::select! {
+                _ = tokio::time::sleep(std::time::Duration::from_millis(next_poll_ms.clamp(1_500, 30_000))) => {},
+                signal = sse_rx.recv() => {
+                    if signal.is_none() {
+                        break;
+                    }
+                }
+            }
+        }
+        first_pull = false;
+
         let cfg = match config::load() {
             Ok(cfg) => cfg,
             Err(error) => {
                 tracing::error!("No se pudo leer la configuración: {}", error);
-                tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                next_poll_ms = 3_000;
                 continue;
             }
         };
 
         match api::pull_jobs(&client, &cfg).await {
             Ok((jobs, next_poll)) => {
+                next_poll_ms = next_poll;
                 {
                     let mut status = state.status.lock().await;
                     status.state = if jobs.is_empty() {
@@ -105,17 +126,13 @@ async fn worker_loop(state: RuntimeState) {
                 for job in jobs {
                     process_job(&client, &cfg, &state, job).await;
                 }
-                tokio::time::sleep(std::time::Duration::from_millis(
-                    next_poll.clamp(1500, 30000),
-                ))
-                .await;
             }
             Err(error) if error == "AUTH_REQUIRED" => {
                 let mut status = state.status.lock().await;
                 status.state = "setup_required".into();
                 status.last_message = Some("La sucursal debe conectarse nuevamente".into());
                 drop(status);
-                tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                next_poll_ms = 3_000;
             }
             Err(error) => {
                 tracing::warn!("La conexión se restablecerá automáticamente: {}", error);
@@ -123,7 +140,40 @@ async fn worker_loop(state: RuntimeState) {
                 status.state = "reconnecting".into();
                 status.last_message = Some("Reconectando automáticamente".into());
                 drop(status);
-                tokio::time::sleep(std::time::Duration::from_secs(8)).await;
+                next_poll_ms = 3_000;
+            }
+        }
+    }
+
+    sse_task.abort();
+}
+
+async fn sse_signal_loop(state: RuntimeState, tx: mpsc::Sender<()>) {
+    while state.running.load(Ordering::SeqCst) {
+        let cfg = match config::load() {
+            Ok(cfg) if !cfg.branch_key.trim().is_empty() => cfg,
+            Ok(_) => {
+                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                continue;
+            }
+            Err(error) => {
+                tracing::warn!("No se pudo preparar el canal en tiempo real: {}", error);
+                tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                continue;
+            }
+        };
+
+        match api::wait_for_sse_signal(&cfg).await {
+            Ok(()) => {
+                let _ = tx.try_send(());
+            }
+            Err(error) if error == "AUTH_REQUIRED" => {
+                tracing::warn!("El canal en tiempo real requiere validar la sucursal nuevamente");
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            }
+            Err(error) => {
+                tracing::debug!("Canal en tiempo real no disponible: {}", error);
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             }
         }
     }

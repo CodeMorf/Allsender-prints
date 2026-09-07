@@ -173,8 +173,8 @@ No mostrar errores internos. Usa códigos internos en logs y mensajes comerciale
 Al terminar, entrega dentro de una carpeta `release/`:
 
 ```text
-RestaAPP-Printer-Setup-3.1.1-x64.exe
-RestaAPP-Printer-3.1.1-x64.msi
+RestaAPP-Printer-Setup-3.1.2-x64.exe
+RestaAPP-Printer-3.1.2-x64.msi
 SHA256SUMS.txt
 CHANGELOG.md
 GUIA_INSTALACION_ES.md

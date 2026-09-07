@@ -93,6 +93,51 @@ pub async fn pull_jobs(client: &Client, config: &crate::models::AppConfig) -> Re
     Ok((jobs, poll_ms))
 }
 
+/// Wait for a server-sent print signal. The stream only wakes the worker;
+/// pull_jobs remains the single owner that atomically claims pending jobs.
+/// This preserves the legacy REST contract and prevents SSE/poll duplicates.
+pub async fn wait_for_sse_signal(config: &crate::models::AppConfig) -> Result<(), String> {
+    let stream_client = Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        // The stream is kept alive by the server heartbeat; reconnect hourly
+        // to avoid keeping a single HTTP connection indefinitely.
+        .timeout(Duration::from_secs(60 * 60))
+        .user_agent(format!("RestaAPP-Printer/{}/sse", crate::models::APP_VERSION))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let response = stream_client
+        .get(format!(
+            "{}/api/print-stream/{}",
+            config.domain_url.trim_end_matches('/'),
+            config.branch_key.trim()
+        ))
+        .header("Accept", "text/event-stream")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if response.status() == StatusCode::UNAUTHORIZED || response.status() == StatusCode::FORBIDDEN {
+        return Err("AUTH_REQUIRED".into());
+    }
+    let mut response = response.error_for_status().map_err(|e| e.to_string())?;
+
+    let mut buffer: Vec<u8> = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
+        buffer.extend_from_slice(&chunk);
+        while let Some(position) = buffer.windows(2).position(|pair| pair == b"\n\n") {
+            let event = String::from_utf8_lossy(&buffer[..position]).into_owned();
+            buffer.drain(..position + 2);
+            if event.lines().any(|line| line.trim() == "event: print") {
+                return Ok(());
+            }
+        }
+        // Bound malformed responses so a bad server cannot grow the agent indefinitely.
+        if buffer.len() > 64 * 1024 {
+            buffer.clear();
+        }
+    }
+    Err("El canal en tiempo real se desconectó".into())
+}
+
 pub async fn mark_job(client: &Client, config: &crate::models::AppConfig, job_id: i64, status: &str, printer: Option<&str>, error: Option<&str>) -> Result<(), String> {
     let body = serde_json::json!({
         "status": status,

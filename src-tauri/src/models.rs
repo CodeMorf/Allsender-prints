@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub const DOMAIN_URL: &str = "https://restapp.allsender.tech";
-pub const APP_VERSION: &str = "3.1.1";
+pub const APP_VERSION: &str = "3.1.2";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

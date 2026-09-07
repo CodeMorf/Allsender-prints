@@ -1,4 +1,4 @@
-# RestaAPP Printer 3.1.1 — Agente de impresión para Windows
+# RestaAPP Printer 3.1.2 — Agente de impresión para Windows
 
 Código fuente del agente de impresión de Windows de **RestaAPP**.
 
@@ -14,6 +14,7 @@ Código fuente del agente de impresión de Windows de **RestaAPP**.
 - Asociación área de RestaAPP → impresora local.
 - Prueba de impresión.
 - Polling de trabajos, descarga del archivo, impresión y confirmación `done/failed`.
+- Canal SSE de aviso inmediato con polling REST como respaldo; la reclamación atómica sigue siendo única para evitar duplicados.
 - Segundo plano, bandeja de Windows, cierre minimizado y apertura automática.
 - Reconexión, cola en vuelo y prevención básica de duplicados.
 - Instalador NSIS/MSI y flujo de compilación para Windows.
@@ -26,7 +27,7 @@ Código fuente del agente de impresión de Windows de **RestaAPP**.
 
 - Flujo principal y mejoras (DPAPI, impresión RAW/GDI, bandeja, diagnóstico) están en el código.
 - La protección de impresión KOT/pre-cuenta/cuenta final está compilada y validada con `cargo check`.
-- El instalador 3.1.1 NSIS/MSI fue generado en Windows x64; la prueba con hardware térmico real sigue siendo una validación de campo.
+- El instalador 3.1.2 NSIS/MSI fue generado en Windows x64; la prueba con hardware térmico real sigue siendo una validación de campo.
 - Lee en este orden: **`ESTADO_ACTUAL.md`** → **`DIAGNOSTICO_FINAL.md`** → **`COMO_COMPILAR_WINDOWS.md`**.
 
 ## Flujo de impresión y cajón
@@ -41,13 +42,13 @@ El servidor impide que una orden no pagada se convierta en recibo final. El agen
 
 ## Actualización de clientes existentes
 
-El instalador 3.1.1 reemplaza el programa, pero la configuración de cada equipo se mantiene fuera del ejecutable en:
+El instalador 3.1.2 reemplaza el programa, pero la configuración de cada equipo se mantiene fuera del ejecutable en:
 
 ```text
 %APPDATA%\Allsender\RestaAPP Printer\config\config.json
 ```
 
-La clave de sucursal se conserva protegida con Windows DPAPI, junto con los mapeos locales de impresoras. Antes de usar el agente con una caja real, instala 3.1.1 y verifica conexión, mapeo de áreas y una impresión de prueba.
+La clave de sucursal se conserva protegida con Windows DPAPI, junto con los mapeos locales de impresoras. Antes de usar el agente con una caja real, instala 3.1.2 y verifica conexión, mapeo de áreas y una impresión de prueba.
 
 ## Requisitos en Windows
 
@@ -84,6 +85,7 @@ src-tauri\target\release\bundle\msi\
 - Test: `GET /api/test-connection`
 - Impresoras: `GET /api/printer-details`
 - Trabajos: `GET /api/print-jobs/pull-multiple`
+- Aviso en tiempo real: `GET /api/print-stream/{branch_unique_hash}`
 - Resultado: `PATCH /api/print-jobs/{id}`
 - No cambiar el flujo KOT multiárea ni el nombre `kot-{kotId}-{kotPlaceId}.png`.
 

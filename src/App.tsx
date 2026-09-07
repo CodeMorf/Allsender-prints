@@ -18,7 +18,7 @@ const defaultConfig: AppConfig = {
   printer_mappings: {},
   backup_mappings: {},
   copies: 1,
-  app_version: "3.1.1",
+  app_version: "3.1.2",
   device_id: ""
 };
 

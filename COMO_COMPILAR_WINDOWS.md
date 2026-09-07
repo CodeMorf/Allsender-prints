@@ -1,4 +1,4 @@
-# Cómo compilar RestaAPP Printer 3.1.1 en Windows x64
+# Cómo compilar RestaAPP Printer 3.1.2 en Windows x64
 
 ## Requisitos
 
@@ -80,10 +80,10 @@ $nsis = Get-ChildItem "$root\src-tauri\target\release\bundle\nsis\*.exe" -ErrorA
 $msi  = Get-ChildItem "$root\src-tauri\target\release\bundle\msi\*.msi"  -ErrorAction SilentlyContinue | Select-Object -First 1
 
 if ($nsis) {
-  Copy-Item $nsis.FullName (Join-Path $rel "RestaAPP-Printer-Setup-3.1.1-x64.exe") -Force
+  Copy-Item $nsis.FullName (Join-Path $rel "RestaAPP-Printer-Setup-3.1.2-x64.exe") -Force
 }
 if ($msi) {
-  Copy-Item $msi.FullName (Join-Path $rel "RestaAPP-Printer-3.1.1-x64.msi") -Force
+  Copy-Item $msi.FullName (Join-Path $rel "RestaAPP-Printer-3.1.2-x64.msi") -Force
 }
 
 # SHA-256
