@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "RestaAPP Printer",
+  "version": "3.1.1",
+  "identifier": "tech.allsender.restaapp.printer",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "RestaAPP Printer",
+        "width": 1160,
+        "height": 760,
+        "minWidth": 820,
+        "minHeight": 620,
+        "center": true,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": true,
+        "decorations": true
+      }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "publisher": "GRUPOOHLA SRL",
+    "copyright": "Copyright © 2026 GRUPOOHLA SRL",
+    "shortDescription": "Agente de impresión para RestaAPP",
+    "longDescription": "Recibe e imprime automáticamente KOT, comandas y recibos de RestaAPP en impresoras configuradas en Windows.",
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "perMachine"
+      }
+    }
+  }
+}
