@@ -51,6 +51,14 @@ pub fn load() -> Result<AppConfig, String> {
     }
     // Decrypt key for runtime
     cfg.branch_key = secure::unprotect(&cfg.branch_key)?;
+    // Existing installations can keep an older version in their local config.
+    // Always expose the version of the executable that is currently running.
+    if cfg.app_version != crate::models::APP_VERSION {
+        cfg.app_version = crate::models::APP_VERSION.into();
+        if let Err(error) = save(&cfg) {
+            tracing::warn!("No se pudo actualizar la versión guardada del agente: {error}");
+        }
+    }
     Ok(cfg)
 }
 
