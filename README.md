@@ -17,6 +17,7 @@ Código fuente del agente de impresión de Windows de **RestaAPP**.
 - Segundo plano, bandeja de Windows, cierre minimizado y apertura automática.
 - Reconexión, cola en vuelo y prevención básica de duplicados.
 - Instalador NSIS/MSI y flujo de compilación para Windows.
+- Instalador NSIS en español por defecto, con selector de español, inglés, italiano o francés.
 - Separación de intención de impresión: KOT, pre-cuenta y cuenta final pagada.
 - El cajón solo se evalúa para trabajos de cuenta final (`order-*`/`split-*`); nunca para KOT ni pre-cuenta.
 - Registros técnicos fuera de la interfaz, en la carpeta local de diagnóstico.
@@ -91,6 +92,4 @@ src-tauri\target\release\bundle\msi\
 1. Firmar EXE/MSI con certificado público o servicio administrado.
 2. Validar SHA-256 y firma en actualizaciones.
 3. Evitar incluir claves reales dentro del repositorio.
-4. Aplicar rotación de registros y botón para exportar diagnóstico.
-
-Lee `PROMPT_PARA_GROK.md` y entrégale la ruta completa de esta carpeta.
+4. Aplicar retención configurable de registros y mantener la exportación de diagnóstico lista para soporte.
